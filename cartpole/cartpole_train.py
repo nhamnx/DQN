@@ -5,40 +5,21 @@ from collections import deque
 import itertools
 import numpy as np
 import random
+from network import Network
 
-GAMMA=0.99
-BATCH_SIZE=32
-BUFFER_SIZE=50000
-MIN_REPLAY_SIZE=1000
-EPSILON_START=1.0
-EPSILON_END=0.02
-EPSILON_DECAY=10000
+EPOCHS = 100000
+GAMMA = 0.99
+BATCH_SIZE = 32
+BUFFER_SIZE = 50000
+MIN_REPLAY_SIZE = 1000
+EPSILON_START = 1.0
+EPSILON_END = 0.02
+EPSILON_DECAY = 10000
 TARGET_UPDATE_FREQ = 1000
 
-class Network(nn.Module):
-    def __init__(self, env):
-        super().__init__()
 
-        in_features = int(np.prod(env.observation_space.shape))
+if __name__ == '__main__':
 
-        self.net = nn.Sequential(
-            nn.Linear(in_features, 64),
-            nn.Tanh(),
-            nn.Linear(64, env.action_space.n)
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-    def act(self, obs):
-        obs_t = torch.as_tensor(obs, dtype=torch.float32)
-        q_values = self(obs_t.unsqueeze(0))
-        max_q_index = torch.argmax(q_values, dim=1)[0]
-        action = max_q_index.detach().item()
-
-        return action
-if __name__ =='__main__':
-        
     env = gym.make('CartPole-v0')
 
     replay_buffer = deque(maxlen=BUFFER_SIZE)
@@ -66,11 +47,12 @@ if __name__ =='__main__':
         if done:
             obs = env.reset()
 
-
     # Main Training Loop
     obs = env.reset()
-    for step in itertools.count():
-        epsilon = np.interp(step, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
+
+    for step in range(EPOCHS):
+        epsilon = np.interp(step, [0, EPSILON_DECAY], [
+                            EPSILON_START, EPSILON_END])
 
         rnd_sample = random.random()
         if rnd_sample <= epsilon:
@@ -91,16 +73,16 @@ if __name__ =='__main__':
             rew_buffer.append(episode_reward)
             episode_reward = 0
 
-        # If we solved it lets just watch it play, put in last
-        if len(rew_buffer) >= 100:
-            if np.mean(rew_buffer) >= 195:
-                while True:
-                    action = online_net.act(obs)
+        # # If we solved it lets just watch it play, put in last
+        # if len(rew_buffer) >= 100:
+        #     if np.mean(rew_buffer) >= 195:
+        #         while True:
+        #             action = online_net.act(obs)
 
-                    obs, _, done, _ = env.step(action)
-                    env.render()
-                    if done: 
-                        env.reset()
+        #             obs, _, done, _ = env.step(action)
+        #             env.render()
+        #             if done:
+        #                 env.reset()
 
         transitions = random.sample(replay_buffer, BATCH_SIZE)
 
@@ -139,17 +121,11 @@ if __name__ =='__main__':
             target_net.load_state_dict(online_net.state_dict())
 
         # Logging
-        if step % 1000 == 0:
+        if step % 10000 == 0:
             print()
             print('Step:', step)
             print('Avg Rew:', np.mean(rew_buffer))
-
-
-
-
-
-
-
-
-
-
+            
+            save_path = 'models/cartpole_v0.pt'
+            torch.save(online_net, save_path)
+    
