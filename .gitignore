@@ -1,7 +1,7 @@
 __pycache__/
-breakout/__pycache__/
+atari-games/__pycache__/
 cartpole/__pycache__/
-breakout/baselines_wrappers/__pycache__/
-breakout/models/*
-breakout/logs/*
+atari-games/baselines_wrappers/__pycache__/
+atari-games/models/*
+atari-games/logs/*
 presentation/
